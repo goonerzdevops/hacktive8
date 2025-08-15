@@ -8,6 +8,7 @@ import fs from 'fs';
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.static('public'));
 
 const fileToGenerativePart = (file, mimeType) => {
   return {
@@ -39,12 +40,32 @@ app.post('/chat', async (req, res) => {
         return res.status(400).json({ error: 'Prompt must be exist.' });
     }
 
+    const contents = messages.map(message => {
+        return {
+        role: message.role,
+        parts: [
+            { text: message.content }
+        ]
+        }
+    })
+
     try {
-        const response = await genAI.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
+        const aiResponse = await ai.models.generateContent({
+        config: {
+            systemInstruction: {
+            parts: [
+                { text: "Anda adalah seorang  programmer yang gemar membuat puisi sebagai  teknis." }
+            ]
+            }
+        },
+        model: "gemini-2.5-flash-lite",
+        contents
+        })
+
+        return res.status(200).json({
+        response: aiResponse.text
         });
-        return res.json({ response: response.text });
+  
     } catch (error) {
         return res.status(500).json({ error: 'Error generating text', details: error.message });
     }

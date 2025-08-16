@@ -28,44 +28,34 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 //add route handler
 app.post('/chat', async (req, res) => {
-    
-    if (!req.body || typeof req.body.prompt !== 'string' || req.body.prompt.trim() === '') 
-    {
-        return res.status(400).json({ error: 'Invalid request: prompt is required.' });
+    const messages = req.body.messages;
+
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+        return res.status(400).json({ error: 'Invalid request: messages array is required.' });
     }
 
-    const prompt = req.body.prompt;
-
-    if (prompt.length < 3 || !prompt) {
-        return res.status(400).json({ error: 'Prompt must be exist.' });
-    }
-
-    const contents = messages.map(message => {
-        return {
+    const contents = messages.map(message => ({
         role: message.role,
-        parts: [
-            { text: message.content }
-        ]
-        }
-    })
+        parts: [{ text: message.content }]
+    }));
 
     try {
-        const aiResponse = await ai.models.generateContent({
-        config: {
-            systemInstruction: {
-            parts: [
-                { text: "Anda adalah seorang  programmer yang gemar membuat puisi sebagai  teknis." }
-            ]
-            }
-        },
-        model: "gemini-2.5-flash-lite",
-        contents
-        })
+        const aiResponse = await genAI.models.generateContent({
+            config: {
+                systemInstruction: {
+                    parts: [
+                        { text: "Anda adalah seorang programmer yang gemar membuat puisi sebagai teknis." }
+                    ]
+                }
+            },
+            model: "gemini-2.5-flash-lite",
+            contents
+        });
 
         return res.status(200).json({
-        response: aiResponse.text
+            response: aiResponse.text
         });
-  
+
     } catch (error) {
         return res.status(500).json({ error: 'Error generating text', details: error.message });
     }
